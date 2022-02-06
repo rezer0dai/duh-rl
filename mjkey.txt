@@ -1,0 +1,20 @@
+MuJoCo Pro Trial license activation key, number 142887, type 6.
+
+Issued to Peter Hlavaty <rezer0dai@gmail.com>.
+
+Expires January 27, 2020.
+
+This file activates MuJoCo Pro on a single computer with id:
+LINUX_P55NUSGM5FM2V40HCHA006M1_SSZV2X0H410LN2101
+
+Do not modify this file. Its entire content, including the
+plain text section, is used by the activation manager.
+
+f157192e7497db93894d7d6b66957de6ed0e4303867cf07c31ba189ad73b2b46
+8659018d245c734fd65703e45dff9a34696a4fc3977450c7da26ac684853c7d4
+b5f486764f133128d4397de67a8e84566e3dbe92829904a6765b82dd1742fe76
+a65f6ab8a2b20000349f62c15c4adf3a94e96c4508d4a7905b684bd5353d0072
+6a3110e04551ce3bfdc18a15e76a033074d0e43dfface7b20ffe40b1430b6db2
+1b6392e7e207ffb5d25d87c6fa582435eb8d499cc6a08909c6968495b6efdf3c
+e944d472d21002177f6dace24e6928750ed3c98885eb1f46fb9b7edc3f361702
+afb6988556c6e742cda4bd858e39b7b83f572bf212403cc03487e8ca1bc08c30
