@@ -3,49 +3,58 @@ def pick(data):
     return random.choice(data)
 
 search_grid = {
-    "DISCOUNT" : [0.982, .93],
-    "NORMALIZE" : [True, False],
-    "STEPS_PER_EPOCH" : [2000],
-    "MINI_BATCH_SIZE" : [32],
-    "PPO_EPOCHS_PER_UPDATE" : [20, 40],
+    "LRPPO" : [1e-3, 3e-4, 1e-5],
+    "LRC" : [1e-3, 3e-4, 1e-5],
+    "LRA" : [1e-3, 3e-4, 1e-5],
+    "UPDATE_COUNT" : [10, 20],
+    "DISCOUNT" : [.982, .97],
+    "NORMALIZE" : [True],
+    "STEPS_PER_EPOCH" : [1000, 500],#2000, 1000],
+    "MINI_BATCH_SIZE" : [64, 32],
+    "PPO_EPOCHS_PER_UPDATE" : [3, 5],
     "PPO_DELAY_LEARN" : [1000],
 
     "RPOLYAK":[False, True],
     "KL_MIN":[.1, .001],
-    "HINDSIGHT_ACTION":[.3],
+    "HINDSIGHT_ACTION":[0., .3],
     "TD3_GAE":[False],
-    "CRITIC_EMPHATIZE_RECENT":[True],
-    "PPO_GAE_N":[1, 3],
+    "CRITIC_EMPHATIZE_RECENT":[False, True, False],
+    "PPO_GAE_N":[10, 3],
     "TD3_GAE_N":[1],
-    "PPO_HER":[True, False, True],
+    "PPO_HER":[False],#, False, True],
 
     "D2RL":[True],
-    "PPO_NORM_IN":[True],
+    "PPO_NORM_IN":[True, False],
     "PPO_TRAIN_ACTOR":[False],
-    "PPO_TRAIN_CRITIC":[True, False],
-    "GOAL1_SIZE":[10, 20, 40],
+    "PPO_TRAIN_CRITIC":[False, True, False],
+    "GOAL1_SIZE":[4, 40],
 
     "HRL":[True],
     "ACHIEVED_PUSH_N":[2],
 
-    "ADVANTAGE":[True, False],
+    "ADVANTAGE":[False],
     "ADV_NORM":[False],
-    "REW_DELTA":[1.],
-    "REW_SCALE":[1.],
-    "KL_DELTA":[1.],
+    "REW_DELTA":[1., 1., 0.],
+    "REW_SCALE":[.1, .1, 1.],
+    "KL_DELTA":[0., 0., 1.],
     "KL_SCALE":[1.],
 
-    "LOOKAHEAD_1":[.5],
-    "LOOKAHEAD_K":[.5],
+    "LOOKAHEAD_1":[.2],
+    "LOOKAHEAD_K":[.2],
 
     "SEPERATE_CRITICS":[False],
-    "PPO_HER_RATIO":[.33, .55, .22],
+    "PPO_HER_RATIO":[.0],#.33],
     "BLIND":[True, False, True],
 
     "TD3_PPO_GRADS":[True],#, False, True],#
     "TD3_PPO_CLIP":[True],#, False, True],#
+    "ELU":[True, False],
 }
 lparams = [
+    "LRPPO",
+    "LRC",
+    "LRA",
+    "UPDATE_COUNT",
     "DISCOUNT",
     "NORMALIZE",
     "STEPS_PER_EPOCH",
@@ -86,10 +95,15 @@ lparams = [
     "BLIND",
     "TD3_PPO_GRADS",
     "TD3_PPO_CLIP",
+    "ELU",
 ]
 
 
 config = """ENV = "mujoco-pusher"
+LRPPO = {}
+LRC = {}
+LRA = {}
+UPDATE_COUNT = {}
 SEED = 0
 MAX_TIMESTEPS = 1e6
 # TD3
@@ -109,7 +123,7 @@ REPLAY_SIZE = 1e7
 START_STEPS = 10000
 UPDATE_AFTER = 1000
 UPDATE_EVERY = 50*2
-UPDATE_COUNT = 40
+#UPDATE_COUNT = 20#40
 EVAL_FREQ = 50 * UPDATE_EVERY
 # HER
 HER_PER_EP = 10
@@ -184,11 +198,18 @@ BLIND = {}
 
 TD3_PPO_GRADS = {}
 TD3_PPO_CLIP = {}
+
+ELU = {}
 """
 
+gae = None
 values = []
 for param in lparams:
     value = pick(search_grid[param])
+    if "PPO_GAE_N" in param:
+        gae = value
+    if "GAE_N" in param:
+        value = gae
     print(param, value)
     values.append(value)
 

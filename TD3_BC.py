@@ -50,13 +50,22 @@ class Actor(nn.Module):
             goal = goal_norm(goal, update=False)#torch.tanh(goal)
         if not config.D2RL:
             state = torch.cat([state, goal], 1)
-        a = F.relu(self.l1(state))
-        if config.D2RL:
-            a = F.relu(self.l2(torch.cat([a, goal], 1)))
-            a = F.relu(self.l22(torch.cat([a, goal], 1)))
+        if config.ELU:
+            a = F.tanh(self.l1(state))
+            if config.D2RL:
+                a = F.elu(self.l2(torch.cat([a, goal], 1)))
+                a = F.elu(self.l22(torch.cat([a, goal], 1)))
+            else:
+                a = F.elu(self.l2(a))
+                a = F.elu(self.l22(a))
         else:
-            a = F.relu(self.l2(a))
-            a = F.relu(self.l22(a))
+            a = F.relu(self.l1(state))
+            if config.D2RL:
+                a = F.relu(self.l2(torch.cat([a, goal], 1)))
+                a = F.relu(self.l22(torch.cat([a, goal], 1)))
+            else:
+                a = F.relu(self.l2(a))
+                a = F.relu(self.l22(a))
         return self.max_action * torch.tanh(self.l3(a))
 
 
@@ -89,22 +98,40 @@ class Critic(nn.Module):
 
         sa = torch.cat([state, action], 1)
 
-        q1 = F.relu(self.l1(sa))
-        if config.D2RL:
-            q1 = F.relu(self.l2(torch.cat([q1, goal], 1)))
-            q1 = F.relu(self.l22(torch.cat([q1, goal], 1)))
-        else:
-            q1 = F.relu(self.l2(q1))
-            q1 = F.relu(self.l22(q1))
-        q1 = self.l3(q1)
+        if config.ELU:
+            q1 = F.tanh(self.l1(sa))
+            if config.D2RL:
+                q1 = F.elu(self.l2(torch.cat([q1, goal], 1)))
+                q1 = F.elu(self.l22(torch.cat([q1, goal], 1)))
+            else:
+                q1 = F.elu(self.l2(q1))
+                q1 = F.elu(self.l22(q1))
+            q1 = self.l3(q1)
 
-        q2 = F.relu(self.l4(sa))
-        if config.D2RL:
-            q2 = F.relu(self.l5(torch.cat([q2, goal], 1)))
-            q2 = F.relu(self.l55(torch.cat([q2, goal], 1)))
+            q2 = F.elu(self.l4(sa))
+            if config.D2RL:
+                q2 = F.elu(self.l5(torch.cat([q2, goal], 1)))
+                q2 = F.elu(self.l55(torch.cat([q2, goal], 1)))
+            else:
+                q2 = F.elu(self.l5(q2))
+                q2 = F.elu(self.l55(q2))
         else:
-            q2 = F.relu(self.l5(q2))
-            q2 = F.relu(self.l55(q2))
+            q1 = F.relu(self.l1(sa))
+            if config.D2RL:
+                q1 = F.relu(self.l2(torch.cat([q1, goal], 1)))
+                q1 = F.relu(self.l22(torch.cat([q1, goal], 1)))
+            else:
+                q1 = F.relu(self.l2(q1))
+                q1 = F.relu(self.l22(q1))
+            q1 = self.l3(q1)
+
+            q2 = F.relu(self.l4(sa))
+            if config.D2RL:
+                q2 = F.relu(self.l5(torch.cat([q2, goal], 1)))
+                q2 = F.relu(self.l55(torch.cat([q2, goal], 1)))
+            else:
+                q2 = F.relu(self.l5(q2))
+                q2 = F.relu(self.l55(q2))
         q2 = self.l6(q2)
         return q1, q2
 
@@ -120,13 +147,22 @@ class Critic(nn.Module):
 
         sa = torch.cat([state, action], 1)
 
-        q1 = F.relu(self.l1(sa))
-        if config.D2RL:
-            q1 = F.relu(self.l2(torch.cat([q1, goal], 1)))
-            q1 = F.relu(self.l22(torch.cat([q1, goal], 1)))
+        if config.ELU:
+            q1 = F.tanh(self.l1(sa))
+            if config.D2RL:
+                q1 = F.elu(self.l2(torch.cat([q1, goal], 1)))
+                q1 = F.elu(self.l22(torch.cat([q1, goal], 1)))
+            else:
+                q1 = F.elu(self.l2(q1))
+                q1 = F.elu(self.l22(q1))
         else:
-            q1 = F.relu(self.l2(q1))
-            q1 = F.relu(self.l22(q1))
+            q1 = F.relu(self.l1(sa))
+            if config.D2RL:
+                q1 = F.relu(self.l2(torch.cat([q1, goal], 1)))
+                q1 = F.relu(self.l22(torch.cat([q1, goal], 1)))
+            else:
+                q1 = F.relu(self.l2(q1))
+                q1 = F.relu(self.l22(q1))
         q1 = self.l3(q1)
         return q1
 
@@ -149,7 +185,7 @@ class TD3_BC(object):
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=config.LRC)#3e-5)
 
         self.max_action = max_action
         self.discount = discount
@@ -170,7 +206,7 @@ class TD3_BC(object):
             for p in model.actor.parameters():
                 yield p
 
-        self.actor_optimizer = torch.optim.Adam(acp(), lr=3e-4)
+        self.actor_optimizer = torch.optim.Adam(acp(), lr=config.LRA)#1e-4)
 
     def select_action(self, state, train_mode=True):
         assert 1 == len(state) or not train_mode

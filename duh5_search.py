@@ -226,10 +226,10 @@ class ActorCritic(nn.Module):
             layer_init(nn.Linear(num_inputs - config.GOAL0_SIZE, hidden_size)),
             nn.Tanh(),
             layer_init(nn.Linear(hidden_size, hidden_size)),
-            nn.Tanh(),
+            nn.Tanh() if not config.ELU else nn.ELU(),
             layer_init(nn.Linear(hidden_size, hidden_size)),
-            nn.Tanh(),
-            layer_init(nn.Linear(hidden_size, num_outputs), std=0.01),
+            nn.Tanh() if not config.ELU else nn.ELU(),
+            layer_init(nn.Linear(hidden_size, num_outputs), std=0.001),
         )
 
         #self.apply(init_weights)
@@ -365,7 +365,7 @@ def ppo_update(ppo_epochs, mini_batch_size, states, actions, log_probs, returns,
         callback(epoch)
 #Hyper params:
 hidden_size      = 256
-lr               = 3e-4
+lr               = config.LRPPO#3e-5
 mini_batch_size  = config.MINI_BATCH_SIZE
 ppo_epochs       = config.PPO_EPOCHS_PER_UPDATE
 
@@ -417,19 +417,22 @@ def floating_gae(k_step, exp,
     if all(np.linalg.norm(achieved_goals[0] - g) < .05 for g in achieved_goals):
         if "usher" in config.ENV:
             #return False
-            if random.random() > .1:
+            if random.random() > .33:
                 return 0
 
-    count = 0
-    for j in range(k_step, len(achieved_goals))[::k_step]:
+    is_ppo = not do_her and 0. == her_ratio#PPO
 
-        target_i = j - k_step
+    count = 0
+    for jj in range(k_step, len(achieved_goals))[::(k_step if config.HRL else 1)]:
+
+        target_i = jj - (k_step if is_ppo else random.randint(1, k_step))
+        j = jj if is_ppo else random.randint(target_i + 1, jj)
 
         states = [ deepcopy(sar[0].reshape(-1)) for sar in (sar_buf + [next_state])[target_i:j+1] ]
         actions = np.vstack([sar[1] for sar in sar_buf[target_i:j]])
 
         for _ in range(config.ACHIEVED_PUSH_N):
-            if do_her and random.random() < (her_ratio if 0. != her_ratio else config.PPO_HER_RATIO):#max(.3, her_ratio):
+            if do_her and random.random() < her_ratio:#(her_ratio if 0. != her_ratio else config.PPO_HER_RATIO):#max(.3, her_ratio):
                 end = len(achieved_goals)
                 if random.random() < config.LOOKAHEAD_1:
                     end = target_i + 1
@@ -437,7 +440,8 @@ def floating_gae(k_step, exp,
                 elif random.random() < config.LOOKAHEAD_K:
                     end = target_i + k_step
 
-                goal = random.choice(achieved_goals[target_i:end])
+                goal = random.choice(achieved_goals[max(0, target_i-2):end])
+#                goal = achieved_goals[target_i+1]
             else: goal = states[0][-config.GOAL0_SIZE:]
 
 #            if 1 != k_step: goal = states[0][-3:]
@@ -450,7 +454,7 @@ def floating_gae(k_step, exp,
             if local_sum > 0:
                 break
 
-        if random.random() < (dummy_filter if (np.linalg.norm(achieved_goals[0] - goal) < .05) else 0.):
+        if not is_ppo and random.random() < (dummy_filter if (np.linalg.norm(achieved_goals[0] - goal) < .05) else 0.):
             continue
 
         count += local_sum > 0
@@ -499,7 +503,7 @@ def floating_gae(k_step, exp,
             exp.add(s, a, states[-1], r, d, sar_buf[target_i+i][-4], sar_buf[target_i+i][-3], ret, o)
 
 
-    if 0. == her_ratio:
+    if is_ppo:
         return count # not for PPO!
 
     for i, (sarn, o) in enumerate(zip(sar_buf[:-1], oracles[:-1])):
@@ -541,7 +545,7 @@ norm_ind = 0
 add_prev_exp = 0
 total_steps = config.STEPS_PER_EPOCH * config.EPOCHS
 
-n_ep_steps = 48 if not config.HRL or 10 != config.PPO_GAE_N else 100
+n_ep_steps = 100#48 if not config.HRL or 10 != config.PPO_GAE_N else 100
 
 normalized_once = False
 
@@ -580,6 +584,10 @@ while n_epochs < config.EPOCHS:
                             sarsgpv, achieved_goals, oracles,
                             policy, model, normalize,
                             next_state)
+                for z in range(2): floating_gae(config.TD3_GAE_N, replay_buffer_critic,
+                            sarsgpv, achieved_goals, oracles,
+                            policy, model, normalize,
+                            next_state, do_her=False, her_ratio=1., fail_filter=.0, dummy_filter=.33)
 
             out = """if norm_ind < replay_buffer_critic.ptr:
                 if config.TD3_GAE:
@@ -597,7 +605,7 @@ while n_epochs < config.EPOCHS:
                         sarsgpv, achieved_goals, oracles,
                         policy, model, normalize,
                         next_state, do_her=config.PPO_HER,
-                        dummy_filter=0., her_ratio=0., fail_filter=.3)
+                        dummy_filter=0., her_ratio=0., fail_filter=.0)
 
                 ni2 = replay_buffer_ppo.ptr-ni2
                 if ok:

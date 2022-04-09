@@ -30,7 +30,7 @@ def make_env(env_name, render, colab=True):
         return panda_make(render, env_name)
     elif "ergojr" in env_name:
         return ergojr_make(render, env_name)
-    if "mujoco" in env_name:
+    elif "mujoco" in env_name:
         return mujoco_make(render, env_name)
     assert False
 
