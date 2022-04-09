@@ -3,9 +3,9 @@ def pick(data):
     return random.choice(data)
 
 search_grid = {
-    "LRPPO" : [1e-3, 3e-4, 1e-5],
-    "LRC" : [1e-3, 3e-4, 1e-5],
-    "LRA" : [1e-3, 3e-4, 1e-5],
+    "LRPPO" : [3e-5, 1e-4],#1e-3, 3e-4, 1e-5],
+    "LRC" : [3e-5, 1e-4],#1e-3, 3e-4, 1e-5],
+    "LRA" : [1e-4],#1e-3, 3e-4, 1e-5],
     "UPDATE_COUNT" : [10, 20],
     "DISCOUNT" : [.982, .97],
     "NORMALIZE" : [True],
